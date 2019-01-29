@@ -13,7 +13,11 @@
 
           USE kinds
           USE pegrid
-          USE particle_attributes
+          USE particle_attributes,                                             &
+            ONLY: grid_particles, number_of_particles, particles,              &
+                  particle_advection_start, prt_count
+          USE control_parameters,                                              &
+            ONLY: simulated_time
 
           IMPLICIT NONE
 
@@ -89,8 +93,40 @@
 !                                                                              !
 !------------------------------------------------------------------------------!
 
-          SUBROUTINE PAR_TRAJ_WRITE
-            IMPLICIT NONE
-            
+          SUBROUTINE PAR_TRAJ_WRITE(kp,jp,ip)
+             IMPLICIT NONE
+ 
+             INTEGER(iwp) :: ip  !< index of particle grid box, x-direction
+             INTEGER(iwp) :: jp  !< index of particle grid box, x-direction
+             INTEGER(iwp) :: kp  !< index of particle grid box, x-direction
+             INTEGER(iwp) ::  n  !< particle index
+             INTEGER(iwp) ::  nb !< index of sub-box particles are sorted in
+             INTEGER(iwp) ::  pn !< the number of particles want to track
+
+             INTEGER(iwp), DIMENSION(0:7)  ::  start_index !< start particle index for current sub-box
+             INTEGER(iwp), DIMENSION(0:7)  ::  end_index   !< start particle index for current sub-box
+
+             number_of_particles = prt_count(kp,jp,ip)
+             particles => grid_particles(kp,jp,ip)%particles(1:number_of_particles)
+
+             start_index = grid_particles(kp,jp,ip)%start_index
+             end_index   = grid_particles(kp,jp,ip)%end_index
+
+             DO  nb = 0, 7
+                DO  n = start_index(nb), end_index(nb)
+                  DO pn = 1,num_par
+                      unit_par = 300+myid+pn
+                      IF ( particles(n)%id == par_id(pn) ) THEN 
+                          WRITE(unit_par,"(F15.7,2X,4(E15.7,2X))") simulated_time,       &
+                                                                   particles(n)%x,       &
+                                                                   particles(n)%y,       &
+                                                                   particles(n)%z,       &
+                                                                   particles(n)%radius
+                      END IF
+
+                  ENDDO 
+                ENDDO
+             ENDDO
+
           END SUBROUTINE PAR_TRAJ_WRITE
         END MODULE

@@ -776,3 +776,541 @@
     SAVE
 
  END MODULE pegrid
+ 
+!------------------------------------------------------------------------------!
+!> Definition of parameters for program control
+!------------------------------------------------------------------------------!
+ MODULE control_parameters
+
+    USE kinds
+
+    TYPE file_status
+       LOGICAL ::  opened         !< file is currently open
+       LOGICAL ::  opened_before  !< file is currently closed, but has been openend before
+    END TYPE file_status
+    
+    INTEGER, PARAMETER      ::  mask_xyz_dimension = 100  !< limit of mask dimensions (100 points in each direction)
+    INTEGER, PARAMETER      ::  max_masks = 50            !< maximum number of masks
+    INTEGER(iwp), PARAMETER ::  varnamelength = 30        !< length of output variable names
+
+    TYPE(file_status), DIMENSION(200+2*max_masks) ::                &  !< indicates if file is open or if it has been opened before
+                             openfile = file_status(.FALSE.,.FALSE.)
+
+    CHARACTER (LEN=1)    ::  cycle_mg = 'w'                               !< namelist parameter (see documentation)
+    CHARACTER (LEN=1)    ::  timestep_reason = ' '                        !< 'A'dvection or 'D'iffusion criterion, written to RUN_CONTROL file
+    CHARACTER (LEN=8)    ::  coupling_char = ''                           !< appended to filenames in coupled or nested runs ('_O': ocean PE,
+                                                                          !< '_NV': vertically nested atmosphere PE, '_N##': PE of nested domain ##
+    CHARACTER (LEN=10)   ::  run_date = ' '                               !< date of simulation run
+    CHARACTER (LEN=8)    ::  run_time = ' '                               !< time of simulation run
+    CHARACTER (LEN=5)    ::  run_zone = ' '                               !< time zone of simulation run
+    CHARACTER (LEN=9)    ::  simulated_time_chr                           !< simulated time, printed to RUN_CONTROL file
+    CHARACTER (LEN=11)   ::  topography_grid_convention = ' '             !< namelist parameter
+    CHARACTER (LEN=12)   ::  version = ' '                                !< PALM version number
+    CHARACTER (LEN=12)   ::  revision = ' '                               !< PALM revision number
+    CHARACTER (LEN=12)   ::  user_interface_current_revision = ' '        !< revision number of the currently used user-interface (must match user_interface_required_revision)
+    CHARACTER (LEN=12)   ::  user_interface_required_revision = ' '       !< required user-interface revision number
+    CHARACTER (LEN=16)   ::  conserve_volume_flow_mode = 'default'        !< namelist parameter
+    CHARACTER (LEN=16)   ::  loop_optimization = 'cache'                  !< namelist parameter
+    CHARACTER (LEN=16)   ::  momentum_advec = 'ws-scheme'                 !< namelist parameter
+    CHARACTER (LEN=16)   ::  psolver = 'poisfft'                          !< namelist parameter
+    CHARACTER (LEN=16)   ::  scalar_advec = 'ws-scheme'                   !< namelist parameter
+    CHARACTER (LEN=20)   ::  approximation = 'boussinesq'                 !< namelist parameter
+    CHARACTER (LEN=40)   ::  flux_input_mode = 'approximation-specific'   !< type of flux input: dynamic or kinematic
+    CHARACTER (LEN=40)   ::  flux_output_mode = 'approximation-specific'  !< type of flux output: dynamic or kinematic
+    CHARACTER (LEN=20)   ::  bc_e_b = 'neumann'                           !< namelist parameter
+    CHARACTER (LEN=20)   ::  bc_lr = 'cyclic'                             !< namelist parameter
+    CHARACTER (LEN=20)   ::  bc_ns = 'cyclic'                             !< namelist parameter
+    CHARACTER (LEN=20)   ::  bc_p_b = 'neumann'                           !< namelist parameter
+    CHARACTER (LEN=20)   ::  bc_p_t = 'dirichlet'                         !< namelist parameter
+    CHARACTER (LEN=20)   ::  bc_pt_b = 'dirichlet'                        !< namelist parameter
+    CHARACTER (LEN=20)   ::  bc_pt_t = 'initial_gradient'                 !< namelist parameter
+    CHARACTER (LEN=20)   ::  bc_q_b = 'dirichlet'                         !< namelist parameter
+    CHARACTER (LEN=20)   ::  bc_q_t = 'neumann'                           !< namelist parameter
+    CHARACTER (LEN=20)   ::  bc_s_b = 'dirichlet'                         !< namelist parameter
+    CHARACTER (LEN=20)   ::  bc_s_t = 'initial_gradient'                  !< namelist parameter
+    CHARACTER (LEN=20)   ::  bc_uv_b = 'dirichlet'                        !< namelist parameter
+    CHARACTER (LEN=20)   ::  bc_uv_t = 'dirichlet'                        !< namelist parameter
+    CHARACTER (LEN=20)   ::  coupling_mode = 'uncoupled'                  !< coupling mode for atmosphere-ocean coupling  
+    CHARACTER (LEN=20)   ::  coupling_mode_remote = 'uncoupled'           !< coupling mode of the remote process in case of coupled atmosphere-ocean runs
+    CHARACTER (LEN=20)   ::  dissipation_1d = 'detering'                  !< namelist parameter
+    CHARACTER (LEN=20)   ::  fft_method = 'temperton-algorithm'           !< namelist parameter
+    CHARACTER (LEN=20)   ::  mixing_length_1d = 'blackadar'               !< namelist parameter
+    CHARACTER (LEN=20)   ::  random_generator = 'random-parallel'         !< namelist parameter
+    CHARACTER (LEN=20)   ::  reference_state = 'initial_profile'          !< namelist parameter  
+    CHARACTER (LEN=20)   ::  timestep_scheme = 'runge-kutta-3'            !< namelist parameter       
+    CHARACTER (LEN=20)   ::  turbulence_closure = 'Moeng_Wyngaard'        !< namelist parameter
+    CHARACTER (LEN=40)   ::  topography = 'flat'                          !< namelist parameter 
+    CHARACTER (LEN=64)   ::  host = '????'                                !< configuration identifier as given by palmrun option -c, ENVPAR namelist parameter provided by palmrun
+    CHARACTER (LEN=80)   ::  log_message                                  !< user-defined message for debugging (sse data_log.f90)
+    CHARACTER (LEN=80)   ::  run_identifier                               !< run identifier as given by palmrun option -r, ENVPAR namelist parameter provided by palmrun
+    CHARACTER (LEN=100)  ::  initializing_actions = ' '                   !< namelist parameter
+    CHARACTER (LEN=100)  ::  restart_string = ' '                         !< for storing strings in case of writing/reading restart data
+    CHARACTER (LEN=210)  ::  run_description_header                       !< string containing diverse run informations as run identifier, coupling mode, host, ensemble number, run date and time
+    CHARACTER (LEN=1000) ::  message_string = ' '                         !< dynamic string for error message output
+
+    CHARACTER (LEN=varnamelength), DIMENSION(500) ::  data_output = ' '       !< namelist parameter
+    CHARACTER (LEN=varnamelength), DIMENSION(500) ::  data_output_user = ' '  !< namelist parameter
+    CHARACTER (LEN=varnamelength), DIMENSION(500) ::  doav = ' '              !< label array for multi-dimensional, 
+                                                                              !< averaged output quantities
+                                            
+    CHARACTER (LEN=varnamelength), DIMENSION(max_masks,100) ::  data_output_masks = ' '       !< namelist parameter
+    CHARACTER (LEN=varnamelength), DIMENSION(max_masks,100) ::  data_output_masks_user = ' '  !< namelist parameter
+
+    CHARACTER (LEN=varnamelength), DIMENSION(300) ::  data_output_pr = ' '  !< namelist parameter
+    
+    CHARACTER (LEN=varnamelength), DIMENSION(200) ::  data_output_pr_user = ' '  !< namelist parameter
+    
+    CHARACTER (LEN=varnamelength), DIMENSION(max_masks,0:1,100) ::  domask = ' ' !< label array for multi-dimensional, 
+                                                                                 !< masked output quantities
+    
+    CHARACTER (LEN=varnamelength), DIMENSION(0:1,500) ::  do2d = ' '  !< label array for 2d output quantities
+    CHARACTER (LEN=varnamelength), DIMENSION(0:1,500) ::  do3d = ' '  !< label array for 3d output quantities
+
+    INTEGER(iwp), PARAMETER ::  fl_max = 100     !< maximum number of virtual-flight measurements
+    INTEGER(iwp), PARAMETER ::  var_fl_max = 20  !< maximum number of different sampling variables in virtual flight measurements
+    
+    INTEGER(iwp) ::  abort_mode = 1                    !< abort condition (nested runs)
+    INTEGER(iwp) ::  agt_time_count = 0                !< number of output intervals for agent data output
+    INTEGER(iwp) ::  average_count_pr = 0              !< number of samples in vertical-profile output
+    INTEGER(iwp) ::  average_count_3d = 0              !< number of samples in 3d output
+    INTEGER(iwp) ::  current_timestep_number = 0       !< current timestep number, printed to RUN_CONTROL file
+    INTEGER(iwp) ::  coupling_topology = 0             !< switch for atmosphere-ocean-coupling: 0: same number of grid points and PEs along x and y in atmosphere and ocean, otherwise 1
+    INTEGER(iwp) ::  dist_range = 0                    !< switch for steering the horizontal disturbance range, 1: inflow disturbances in case of non-cyclic horizontal BC, 0: otherwise
+    INTEGER(iwp) ::  disturbance_level_ind_b           !< lowest grid index where flow disturbance is applied
+    INTEGER(iwp) ::  disturbance_level_ind_t           !< highest grid index where flow disturbance is applied
+    INTEGER(iwp) ::  doav_n = 0                        !< number of 2d/3d output quantities subject to time averaging
+    INTEGER(iwp) ::  dopr_n = 0                        !< number of profile output quantities subject to time averaging
+    INTEGER(iwp) ::  dopr_time_count = 0               !< number of output intervals for profile output
+    INTEGER(iwp) ::  dopts_time_count = 0              !< number of output intervals for particle data timeseries
+    INTEGER(iwp) ::  dots_time_count = 0               !< number of output intervals for timeseries output
+    INTEGER(iwp) ::  dp_level_ind_b = 0                !< lowest grid index for external pressure gradient forcing
+    INTEGER(iwp) ::  dvrp_filecount = 0                !< parameter for dvr visualization software
+    INTEGER(iwp) ::  ensemble_member_nr = 0            !< namelist parameter
+    INTEGER(iwp) ::  gamma_mg                          !< switch for steering the multigrid cycle: 1: v-cycle, 2: w-cycle
+    INTEGER(iwp) ::  gathered_size                     !< number of total domain grid points of the grid level which is gathered on PE0 (multigrid solver)
+    INTEGER(iwp) ::  grid_level                        !< current grid level handled in the multigrid solver
+    INTEGER(iwp) ::  ibc_e_b                           !< integer flag for bc_e_b
+    INTEGER(iwp) ::  ibc_p_b                           !< integer flag for bc_p_b
+    INTEGER(iwp) ::  ibc_p_t                           !< integer flag for bc_p_t
+    INTEGER(iwp) ::  ibc_pt_b                          !< integer flag for bc_pt_b
+    INTEGER(iwp) ::  ibc_pt_t                          !< integer flag for bc_pt_t
+    INTEGER(iwp) ::  ibc_q_b                           !< integer flag for bc_q_b
+    INTEGER(iwp) ::  ibc_q_t                           !< integer flag for bc_q_t
+    INTEGER(iwp) ::  ibc_s_b                           !< integer flag for bc_s_b
+    INTEGER(iwp) ::  ibc_s_t                           !< integer flag for bc_s_t
+    INTEGER(iwp) ::  ibc_uv_b                          !< integer flag for bc_uv_b
+    INTEGER(iwp) ::  ibc_uv_t                          !< integer flag for bc_uv_t
+    INTEGER(iwp) ::  inflow_disturbance_begin = -1     !< namelist parameter
+    INTEGER(iwp) ::  inflow_disturbance_end = -1       !< namelist parameter
+    INTEGER(iwp) ::  intermediate_timestep_count       !< number of current Runge-Kutta substep
+    INTEGER(iwp) ::  intermediate_timestep_count_max   !< maximum number of Runge-Kutta substeps
+    INTEGER(iwp) ::  io_group = 0                      !< I/O group to which the PE belongs (= #PE / io_blocks)
+    INTEGER(iwp) ::  io_blocks = 1                     !< number of blocks for which I/O is done in sequence (total number of PEs / maximum_parallel_io_streams)
+    INTEGER(iwp) ::  iran = -1234567                   !< integer random number used for flow disturbances
+    INTEGER(iwp) ::  length = 0                        !< integer that specifies the length of a string in case of writing/reading restart data
+    INTEGER(iwp) ::  masks = 0                         !< counter for number of masked output quantities
+    INTEGER(iwp) ::  maximum_grid_level                !< number of grid levels that the multigrid solver is using
+    INTEGER(iwp) ::  maximum_parallel_io_streams = -1  !< maximum number of parallel io streams that the underlying parallel file system allows, set with palmrun option -w, ENVPAR namelist parameter, provided by palmrun
+    INTEGER(iwp) ::  max_pr_user = 0                   !< number of user-defined profiles (must not change within a job chain)
+    INTEGER(iwp) ::  max_pr_user_tmp = 0               !< number of user-defined profiles that is temporary stored to check it against max_pr_user in case of restarts
+    INTEGER(iwp) ::  mgcycles = 0                      !< number of multigrid cycles that the multigrid solver has actually carried out
+    INTEGER(iwp) ::  mg_cycles = 4                     !< namelist parameter
+    INTEGER(iwp) ::  mg_switch_to_pe0_level = -1       !< namelist parameter
+    INTEGER(iwp) ::  mid                               !< masked output running index
+    INTEGER(iwp) ::  ngsrb = 2                         !< namelist parameter
+    INTEGER(iwp) ::  nr_timesteps_this_run = 0         !< number of timesteps (cpu time measurements)
+    INTEGER(iwp) ::  nsor = 20                         !< namelist parameter
+    INTEGER(iwp) ::  nsor_ini = 100                    !< namelist parameter
+    INTEGER(iwp) ::  n_sor                             !< number of iterations to be used in SOR-scheme
+    INTEGER(iwp) ::  normalizing_region = 0            !< namelist parameter
+    INTEGER(iwp) ::  num_mean_inflow_profiles = 7      !< number of mean inflow profiles in case of turbulent inflow
+    INTEGER(iwp) ::  num_leg=0                         !< number of different legs in virtual flight measurements
+    INTEGER(iwp) ::  num_var_fl                        !< number of sampling/output variables in virtual flight measurements
+    INTEGER(iwp) ::  num_var_fl_user=0                 !< number of user-defined sampling/output variables in virtual flight measurements
+    INTEGER(iwp) ::  number_stretch_level_start        !< number of user-specified start levels for stretching
+    INTEGER(iwp) ::  number_stretch_level_end          !< number of user-specified end levels for stretching
+    INTEGER(iwp) ::  nz_do3d = -9999                   !< namelist parameter
+    INTEGER(iwp) ::  prt_time_count = 0                !< number of output intervals for particle data output
+    INTEGER(iwp) ::  recycling_plane                   !< position of recycling plane along x (in grid points) in case of turbulence recycling
+    INTEGER(iwp) ::  runnr = 0                         !< number of run in job chain
+    INTEGER(iwp) ::  subdomain_size                    !< number of grid points in (3d) subdomain including ghost points
+    INTEGER(iwp) ::  terminate_coupled = 0             !< switch for steering termination in case of coupled runs
+    INTEGER(iwp) ::  terminate_coupled_remote = 0      !< switch for steering termination in case of coupled runs (condition of the remote model)
+    INTEGER(iwp) ::  timestep_count = 0                !< number of timesteps carried out since the beginning of the initial run
+    INTEGER(iwp) ::  y_shift = 0                       !< namelist parameter
+    
+    INTEGER(iwp) ::  dist_nxl(0:1)                               !< left boundary of disturbance region
+    INTEGER(iwp) ::  dist_nxr(0:1)                               !< right boundary of disturbance region
+    INTEGER(iwp) ::  dist_nyn(0:1)                               !< north boundary of disturbance region
+    INTEGER(iwp) ::  dist_nys(0:1)                               !< south boundary of disturbance region
+    INTEGER(iwp) ::  do2d_no(0:1) = 0                            !< number of 2d output quantities
+    INTEGER(iwp) ::  do2d_xy_time_count(0:1) = 0                 !< number of output intervals for 2d data (xy)
+    INTEGER(iwp) ::  do2d_xz_time_count(0:1) = 0                 !< number of output intervals for 2d data (xz)
+    INTEGER(iwp) ::  do2d_yz_time_count(0:1) = 0                 !< number of output intervals for 2d data (yz)
+    INTEGER(iwp) ::  do3d_no(0:1) = 0                            !< number of 3d output quantities
+    INTEGER(iwp) ::  do3d_time_count(0:1) = 0                    !< number of output intervals for 3d data
+    INTEGER(iwp) ::  domask_no(max_masks,0:1) = 0                !< number of masked output quantities
+    INTEGER(iwp) ::  domask_time_count(max_masks,0:1)            !< number of output intervals for masked data
+    INTEGER(iwp) ::  dz_stretch_level_end_index(9)               !< vertical grid level index until which the vertical grid spacing is stretched
+    INTEGER(iwp) ::  dz_stretch_level_start_index(9)             !< vertical grid level index above which the vertical grid spacing is stretched
+    INTEGER(iwp) ::  mask_size(max_masks,3) = -1                 !< size of mask array per mask and dimension (for netcdf output)
+    INTEGER(iwp) ::  mask_size_l(max_masks,3) = -1               !< subdomain size of mask array per mask and dimension (for netcdf output)
+    INTEGER(iwp) ::  mask_start_l(max_masks,3) = -1              !< subdomain start index of mask array (for netcdf output)
+    INTEGER(iwp) ::  pt_vertical_gradient_level_ind(10) = -9999  !< grid index values of pt_vertical_gradient_level(s)
+    INTEGER(iwp) ::  q_vertical_gradient_level_ind(10) = -9999   !< grid index values of q_vertical_gradient_level(s)
+    INTEGER(iwp) ::  s_vertical_gradient_level_ind(10) = -9999   !< grid index values of s_vertical_gradient_level(s)   
+    INTEGER(iwp) ::  section(100,3)                              !< collective array for section_xy/xz/yz
+    INTEGER(iwp) ::  section_xy(100) = -9999                     !< namelist parameter
+    INTEGER(iwp) ::  section_xz(100) = -9999                     !< namelist parameter
+    INTEGER(iwp) ::  section_yz(100) = -9999                     !< namelist parameter
+    INTEGER(iwp) ::  ug_vertical_gradient_level_ind(10) = -9999  !< grid index values of ug_vertical_gradient_level(s)
+    INTEGER(iwp) ::  vg_vertical_gradient_level_ind(10) = -9999  !< grid index values of vg_vertical_gradient_level(s)
+    INTEGER(iwp) ::  subs_vertical_gradient_level_i(10) = -9999  !< grid index values of subs_vertical_gradient_level(s)
+
+    INTEGER(iwp), DIMENSION(0:1) ::  ntdim_2d_xy  !< number of output intervals for 2d data (xy)
+    INTEGER(iwp), DIMENSION(0:1) ::  ntdim_2d_xz  !< number of output intervals for 2d data (xz)
+    INTEGER(iwp), DIMENSION(0:1) ::  ntdim_2d_yz  !< number of output intervals for 2d data (yz)
+    INTEGER(iwp), DIMENSION(0:1) ::  ntdim_3d     !< number of output intervals for 3d data
+
+    INTEGER(iwp), DIMENSION(:), ALLOCATABLE ::  grid_level_count  !< internal switch for steering the multigrid v- and w-cycles
+
+    INTEGER(iwp), DIMENSION(:,:), ALLOCATABLE ::  mask_i         !< subdomain grid index of masked output point on x-dimension
+    INTEGER(iwp), DIMENSION(:,:), ALLOCATABLE ::  mask_j         !< subdomain grid index of masked output point on y-dimension
+    INTEGER(iwp), DIMENSION(:,:), ALLOCATABLE ::  mask_k         !< subdomain grid index of masked output point on z-dimension
+    INTEGER(iwp), DIMENSION(:,:), ALLOCATABLE ::  mask_i_global  !< global grid index of masked output point on x-dimension
+    INTEGER(iwp), DIMENSION(:,:), ALLOCATABLE ::  mask_j_global  !< global grid index of masked output point on y-dimension
+    INTEGER(iwp), DIMENSION(:,:), ALLOCATABLE ::  mask_k_global  !< global grid index of masked output point on z-dimension
+
+    INTEGER(iwp), DIMENSION(max_masks,mask_xyz_dimension) ::  mask_k_over_surface = -1  !< namelist parameter, k index of height over surface
+
+    LOGICAL ::  agent_time_unlimited = .FALSE.                   !< namelist parameter
+    LOGICAL ::  air_chemistry = .FALSE.                          !< chemistry model switch
+    LOGICAL ::  bc_dirichlet_l                                   !< flag indicating dirichlet boundary condition on left model boundary
+    LOGICAL ::  bc_dirichlet_n                                   !< flag indicating dirichlet boundary condition on north model boundary
+    LOGICAL ::  bc_dirichlet_r                                   !< flag indicating dirichlet boundary condition on right model boundary
+    LOGICAL ::  bc_dirichlet_s                                   !< flag indicating dirichlet boundary condition on south model boundary
+    LOGICAL ::  bc_lr_cyc =.TRUE.                                !< left-right boundary condition cyclic?
+    LOGICAL ::  bc_lr_dirrad = .FALSE.                           !< left-right boundary condition dirichlet/radiation?
+    LOGICAL ::  bc_lr_raddir = .FALSE.                           !< left-right boundary condition radiation/dirichlet?
+    LOGICAL ::  bc_ns_cyc = .TRUE.                               !< north-south boundary condition cyclic?
+    LOGICAL ::  bc_ns_dirrad = .FALSE.                           !< north-south boundary condition dirichlet/radiation?
+    LOGICAL ::  bc_ns_raddir = .FALSE.                           !< north-south boundary condition radiation/dirichlet?
+    LOGICAL ::  bc_radiation_l = .FALSE.                         !< radiation boundary condition for outflow at left domain boundary
+    LOGICAL ::  bc_radiation_n = .FALSE.                         !< radiation boundary condition for outflow at north domain boundary
+    LOGICAL ::  bc_radiation_r = .FALSE.                         !< radiation boundary condition for outflow at right domain boundary
+    LOGICAL ::  bc_radiation_s = .FALSE.                         !< radiation boundary condition for outflow at south domain boundary
+    LOGICAL ::  biometeorology = .FALSE.                         !< biometeorology module switch
+    LOGICAL ::  calc_soil_moisture_during_spinup = .FALSE.       !< namelist parameter
+    LOGICAL ::  call_psolver_at_all_substeps = .TRUE.            !< namelist parameter
+    LOGICAL ::  child_domain  = .FALSE.                          !< flag indicating that model is nested in a parent domain
+    LOGICAL ::  cloud_droplets = .FALSE.                         !< namelist parameter
+    LOGICAL ::  complex_terrain = .FALSE.                        !< namelist parameter
+    LOGICAL ::  conserve_volume_flow = .FALSE.                   !< namelist parameter
+    LOGICAL ::  constant_diffusion = .FALSE.                     !< diffusion coefficient constant?
+    LOGICAL ::  constant_flux_layer = .TRUE.                     !< namelist parameter
+    LOGICAL ::  constant_heatflux = .TRUE.                       !< heat flux at all surfaces constant?
+    LOGICAL ::  constant_top_heatflux = .TRUE.                   !< heat flux at domain top constant?
+    LOGICAL ::  constant_top_momentumflux = .FALSE.              !< momentum flux at domain topconstant?
+    LOGICAL ::  constant_top_salinityflux = .TRUE.               !< constant salinity flux at ocean surface
+    LOGICAL ::  constant_top_scalarflux = .TRUE.                 !< passive-scalar flux at domain top constant?
+    LOGICAL ::  constant_scalarflux = .TRUE.                     !< passive-scalar flux at surfaces constant?
+    LOGICAL ::  constant_waterflux = .TRUE.                      !< water flux at all surfaces constant?
+    LOGICAL ::  create_disturbances = .TRUE.                     !< namelist parameter
+    LOGICAL ::  data_output_during_spinup = .FALSE.              !< namelist parameter
+    LOGICAL ::  data_output_2d_on_each_pe = .TRUE.               !< namelist parameter
+    LOGICAL ::  disturbance_created = .FALSE.                    !< flow disturbance imposed?
+    LOGICAL ::  do2d_at_begin = .FALSE.                          !< namelist parameter
+    LOGICAL ::  do3d_at_begin = .FALSE.                          !< namelist parameter
+    LOGICAL ::  do_output_at_2m = .FALSE.                        !< flag for activating calculation of potential temperature at z = 2 m
+    LOGICAL ::  do_sum = .FALSE.                                 !< contribute to time average of profile data?
+    LOGICAL ::  dp_external = .FALSE.                            !< namelist parameter
+    LOGICAL ::  dp_smooth = .FALSE.                              !< namelist parameter
+    LOGICAL ::  dt_fixed = .FALSE.                               !< fixed timestep (namelist parameter dt set)?
+    LOGICAL ::  dt_3d_reached                                    !< internal timestep for particle advection
+    LOGICAL ::  dt_3d_reached_l                                  !< internal timestep for particle advection
+    LOGICAL ::  first_call_lpm = .TRUE.                          !< call lpm only once per timestep?
+    LOGICAL ::  first_call_mas = .TRUE.                          !< call mas only once per timestep
+    LOGICAL ::  force_print_header = .FALSE.                     !< namelist parameter
+    LOGICAL ::  galilei_transformation = .FALSE.                 !< namelist parameter
+    LOGICAL ::  humidity = .FALSE.                               !< namelist parameter
+    LOGICAL ::  humidity_remote = .FALSE.                        !< switch for receiving near-surface humidity flux (atmosphere-ocean coupling)
+    LOGICAL ::  indoor_model = .FALSE.                           !< switch for indoor-climate and energy-demand model
+    LOGICAL ::  large_scale_forcing = .FALSE.                    !< namelist parameter
+    LOGICAL ::  large_scale_subsidence = .FALSE.                 !< namelist parameter
+    LOGICAL ::  land_surface = .FALSE.                           !< use land surface model?
+    LOGICAL ::  les_dynamic = .FALSE.                            !< use dynamic subgrid model as turbulence closure for LES mode
+    LOGICAL ::  les_mw = .FALSE.                                 !< use Moeng-Wyngaard turbulence closure for LES mode
+    LOGICAL ::  lsf_exception = .FALSE.                          !< use of lsf with buildings (temporary)?
+    LOGICAL ::  lsf_surf = .TRUE.                                !< use surface forcing (large scale forcing)?
+    LOGICAL ::  lsf_vert = .TRUE.                                !< use atmospheric forcing (large scale forcing)?
+    LOGICAL ::  masking_method = .FALSE.                         !< namelist parameter
+    LOGICAL ::  mg_switch_to_pe0 = .FALSE.                       !< internal multigrid switch for steering the ghost point exchange in case that data has been collected on PE0
+    LOGICAL ::  nesting_offline = .FALSE.                        !< flag controlling offline nesting in COSMO model  
+    LOGICAL ::  neutral = .FALSE.                                !< namelist parameter
+    LOGICAL ::  nudging = .FALSE.                                !< namelist parameter
+    LOGICAL ::  ocean_mode = .FALSE.                             !< namelist parameter
+    LOGICAL ::  passive_scalar = .FALSE.                         !< namelist parameter
+    LOGICAL ::  plant_canopy = .FALSE.                           !< switch for use of plant canopy model
+    LOGICAL ::  random_heatflux = .FALSE.                        !< namelist parameter
+    LOGICAL ::  rans_mode = .FALSE.                              !< switch between RANS and LES mode
+    LOGICAL ::  rans_tke_e = .FALSE.                             !< use TKE-e turbulence closure for RANS mode
+    LOGICAL ::  rans_tke_l = .FALSE.                             !< use TKE-l turbulence closure for RANS mode
+    LOGICAL ::  read_svf = .FALSE.                               !< ENVPAR namelist parameter to steer input of svf (ENVPAR is provided by palmrun)
+    LOGICAL ::  recycling_yshift = .FALSE.                       !< namelist parameter
+    LOGICAL ::  run_control_header = .FALSE.                     !< onetime output of RUN_CONTROL header
+    LOGICAL ::  run_coupled = .TRUE.                             !< internal switch telling PALM to run in coupled mode (i.e. to exchange surface data) in case of atmosphere-ocean coupling
+    LOGICAL ::  salsa = .FALSE.                                  !< switch for the sectional aerosol module salsa
+    LOGICAL ::  scalar_rayleigh_damping = .TRUE.                 !< namelist parameter
+    LOGICAL ::  sloping_surface = .FALSE.                        !< use sloped surface? (namelist parameter alpha_surface)
+    LOGICAL ::  spinup = .FALSE.                                 !< perform model spinup without atmosphere code?
+    LOGICAL ::  surface_output = .FALSE.                         !< output of surface data
+    LOGICAL ::  stop_dt = .FALSE.                                !< internal switch to stop the time stepping
+    LOGICAL ::  synchronous_exchange = .FALSE.                   !< namelist parameter
+    LOGICAL ::  syn_turb_gen = .FALSE.                           !< flag for synthetic turbulence generator module
+    LOGICAL ::  terminate_run = .FALSE.                          !< terminate run (cpu-time limit, restarts)?
+    LOGICAL ::  topo_no_distinct = .FALSE.                       !< flag controlling classification of topography surfaces
+    LOGICAL ::  transpose_compute_overlap = .FALSE.              !< namelist parameter
+    LOGICAL ::  turbulent_inflow = .FALSE.                       !< namelist parameter
+    LOGICAL ::  turbulent_outflow = .FALSE.                      !< namelist parameter
+    LOGICAL ::  urban_surface = .FALSE.                          !< use urban surface model?
+    LOGICAL ::  use_cmax = .TRUE.                                !< namelist parameter
+    LOGICAL ::  use_free_convection_scaling = .FALSE.            !< namelist parameter to switch on free convection velocity scale in calculation of horizontal wind speed (surface_layer_fluxes)
+    LOGICAL ::  use_initial_profile_as_reference = .FALSE.       !< use of initial profiles as reference state?
+    LOGICAL ::  use_prescribed_profile_data = .FALSE.            !< use of prescribed wind profiles?
+                                                                 !< (namelist parameters u_profile, v_profile)
+    LOGICAL ::  use_single_reference_value = .FALSE.             !< use of single value as reference state?
+    LOGICAL ::  use_subsidence_tendencies = .FALSE.              !< namelist parameter
+    LOGICAL ::  use_surface_fluxes = .FALSE.                     !< namelist parameter
+    LOGICAL ::  use_top_fluxes = .FALSE.                         !< namelist parameter
+    LOGICAL ::  use_ug_for_galilei_tr = .TRUE.                   !< namelist parameter
+    LOGICAL ::  use_upstream_for_tke = .FALSE.                   !< namelist parameter
+    LOGICAL ::  virtual_flight = .FALSE.                         !< use virtual flight model
+    LOGICAL ::  virtual_measurement = .FALSE.                    !< control parameter to switch-on virtual measurements
+    LOGICAL ::  wall_adjustment = .TRUE.                         !< namelist parameter
+    LOGICAL ::  wind_turbine = .FALSE.                           !< flag for use of wind turbine model
+    LOGICAL ::  write_binary = .FALSE.                           !< ENVPAR namelist parameter to steer restart I/O (ENVPAR is provided by palmrun)
+    LOGICAL ::  write_svf = .FALSE.                              !< ENVPAR namelist parameter to steer output of svf (ENVPAR is provided by palmrun)
+    LOGICAL ::  ws_scheme_sca = .FALSE.                          !< use Wicker-Skamarock scheme (scalar advection)?
+    LOGICAL ::  ws_scheme_mom = .FALSE.                          !< use Wicker-Skamarock scheme (momentum advection)?
+
+    LOGICAL ::  data_output_xy(0:1) = .FALSE.                !< output of xy cross-section data?
+    LOGICAL ::  data_output_xz(0:1) = .FALSE.                !< output of xz cross-section data?
+    LOGICAL ::  data_output_yz(0:1) = .FALSE.                !< output of yz cross-section data?
+
+    LOGICAL, DIMENSION(max_masks) ::  mask_surface = .FALSE.      !< flag for surface-following masked output
+
+    REAL(wp) ::  advected_distance_x = 0.0_wp                  !< advected distance of model domain along x 
+                                                               !< (galilei transformation) 
+    REAL(wp) ::  advected_distance_y = 0.0_wp                  !< advected distance of model domain along y 
+                                                               !< (galilei transformation)
+    REAL(wp) ::  alpha_surface = 0.0_wp                        !< namelist parameter
+    REAL(wp) ::  atmos_ocean_sign = 1.0_wp                     !< vertical-grid conversion factor
+                                                               !< (=1.0 in atmosphere, =-1.0 in ocean)
+    REAL(wp) ::  averaging_interval = 0.0_wp                   !< namelist parameter
+    REAL(wp) ::  averaging_interval_pr = 9999999.9_wp          !< namelist parameter
+    REAL(wp) ::  bc_pt_t_val                                   !< vertical gradient of pt near domain top
+    REAL(wp) ::  bc_q_t_val                                    !< vertical gradient of humidity near domain top
+    REAL(wp) ::  bc_s_t_val                                    !< vertical gradient of passive scalar near domain top
+    REAL(wp) ::  bottom_salinityflux = 0.0_wp                  !< namelist parameter
+    REAL(wp) ::  building_height = 50.0_wp                     !< namelist parameter
+    REAL(wp) ::  building_length_x = 50.0_wp                   !< namelist parameter
+    REAL(wp) ::  building_length_y = 50.0_wp                   !< namelist parameter
+    REAL(wp) ::  building_wall_left = 9999999.9_wp             !< namelist parameter
+    REAL(wp) ::  building_wall_south = 9999999.9_wp            !< namelist parameter
+    REAL(wp) ::  canyon_height = 50.0_wp                       !< namelist parameter
+    REAL(wp) ::  canyon_width_x = 9999999.9_wp                 !< namelist parameter
+    REAL(wp) ::  canyon_width_y = 9999999.9_wp                 !< namelist parameter
+    REAL(wp) ::  canyon_wall_left = 9999999.9_wp               !< namelist parameter
+    REAL(wp) ::  canyon_wall_south = 9999999.9_wp              !< namelist parameter
+    REAL(wp) ::  cfl_factor = -1.0_wp                          !< namelist parameter
+    REAL(wp) ::  cos_alpha_surface                             !< cosine of alpha_surface
+    REAL(wp) ::  coupling_start_time = 0.0_wp                  !< namelist parameter
+    REAL(wp) ::  days_since_reference_point = 0.0_wp           !< days after atmosphere-ocean coupling has been activated, 
+                                                               !< or after spinup phase of LSM has been finished 
+    REAL(wp) ::  disturbance_amplitude = 0.25_wp               !< namelist parameter
+    REAL(wp) ::  disturbance_energy_limit = 0.01_wp            !< namelist parameter
+    REAL(wp) ::  disturbance_level_b = -9999999.9_wp           !< namelist parameter
+    REAL(wp) ::  disturbance_level_t = -9999999.9_wp           !< namelist parameter
+    REAL(wp) ::  dp_level_b = 0.0_wp                           !< namelist parameter
+    REAL(wp) ::  dt = -1.0_wp                                  !< namelist parameter
+    REAL(wp) ::  dt_averaging_input = 0.0_wp                   !< namelist parameter
+    REAL(wp) ::  dt_averaging_input_pr = 9999999.9_wp          !< namelist parameter
+    REAL(wp) ::  dt_coupling = 9999999.9_wp                    !< namelist parameter
+    REAL(wp) ::  dt_data_output = 9999999.9_wp                 !< namelist parameter
+    REAL(wp) ::  dt_data_output_av = 9999999.9_wp              !< namelist parameter
+    REAL(wp) ::  dt_disturb = 9999999.9_wp                     !< namelist parameter
+    REAL(wp) ::  dt_dopr = 9999999.9_wp                        !< namelist parameter
+    REAL(wp) ::  dt_dopr_listing = 9999999.9_wp                !< namelist parameter
+    REAL(wp) ::  dt_dopts = 9999999.9_wp                       !< namelist parameter
+    REAL(wp) ::  dt_dots = 9999999.9_wp                        !< namelist parameter
+    REAL(wp) ::  dt_do2d_xy = 9999999.9_wp                     !< namelist parameter
+    REAL(wp) ::  dt_do2d_xz = 9999999.9_wp                     !< namelist parameter
+    REAL(wp) ::  dt_do2d_yz = 9999999.9_wp                     !< namelist parameter
+    REAL(wp) ::  dt_do3d = 9999999.9_wp                        !< namelist parameter
+    REAL(wp) ::  dt_dvrp = 9999999.9_wp                        !< namelist parameter
+    REAL(wp) ::  dt_max = 20.0_wp                              !< namelist parameter
+    REAL(wp) ::  dt_restart = 9999999.9_wp                     !< namelist parameter
+    REAL(wp) ::  dt_run_control = 60.0_wp                      !< namelist parameter
+    REAL(wp) ::  dt_spinup = 60.0_wp                           !< namelist parameter
+    REAL(wp) ::  dt_write_agent_data = 9999999.9_wp            !< namelist parameter
+    REAL(wp) ::  dt_3d = 0.01_wp                               !< time step
+    REAL(wp) ::  dz_max = 999.0_wp                             !< namelist parameter
+    REAL(wp) ::  dz_stretch_factor = 1.08_wp                   !< namelist parameter
+    REAL(wp) ::  dz_stretch_level = -9999999.9_wp              !< namelist parameter
+    REAL(wp) ::  e_init = 0.0_wp                               !< namelist parameter
+    REAL(wp) ::  e_min = 0.0_wp                                !< namelist parameter
+    REAL(wp) ::  end_time = 0.0_wp                             !< namelist parameter
+    REAL(wp) ::  f = 0.0_wp                                    !< Coriolis parameter
+    REAL(wp) ::  fs = 0.0_wp                                   !< Coriolis parameter
+    REAL(wp) ::  inflow_damping_height = 9999999.9_wp          !< namelist parameter
+    REAL(wp) ::  inflow_damping_width = 9999999.9_wp           !< namelist parameter
+    REAL(wp) ::  km_constant = -1.0_wp                         !< namelist parameter
+    REAL(wp) ::  latitude = 55.0_wp                            !< namelist parameter
+    REAL(wp) ::  longitude = 0.0_wp                            !< namelist parameter
+    REAL(wp) ::  mask_scale_x = 1.0_wp                         !< namelist parameter
+    REAL(wp) ::  mask_scale_y = 1.0_wp                         !< namelist parameter
+    REAL(wp) ::  mask_scale_z = 1.0_wp                         !< namelist parameter
+    REAL(wp) ::  maximum_cpu_time_allowed = 0.0_wp             !< given wall time for run
+    REAL(wp) ::  molecular_viscosity = 1.461E-5_wp             !< molecular viscosity (used in lsm and lpm)
+    REAL(wp) ::  multi_agent_system_end   = 9999999.9_wp       !< namelist parameter (see documentation)
+    REAL(wp) ::  multi_agent_system_start = 0.0_wp             !< namelist parameter (see documentation)
+    REAL(wp) ::  old_dt = 1.0E-10_wp                           !< length of previous timestep
+    REAL(wp) ::  omega = 7.29212E-5_wp                         !< namelist parameter
+    REAL(wp) ::  omega_sor = 1.8_wp                            !< namelist parameter
+    REAL(wp) ::  outflow_source_plane = -9999999.9_wp          !< namelist parameter
+    REAL(wp) ::  particle_maximum_age = 9999999.9_wp           !< namelist parameter
+    REAL(wp) ::  prandtl_number = 1.0_wp                       !< namelist parameter
+    REAL(wp) ::  pt_damping_factor = 0.0_wp                    !< namelist parameter
+    REAL(wp) ::  pt_damping_width = 0.0_wp                     !< namelist parameter
+    REAL(wp) ::  pt_reference = 9999999.9_wp                   !< namelist parameter
+    REAL(wp) ::  pt_slope_offset = 0.0_wp                      !< temperature difference between left and right 
+                                                               !< boundary of total domain
+    REAL(wp) ::  pt_surface = 300.0_wp                         !< namelist parameter
+    REAL(wp) ::  pt_surface_initial_change = 0.0_wp            !< namelist parameter
+    REAL(wp) ::  q_surface = 0.0_wp                            !< namelist parameter
+    REAL(wp) ::  q_surface_initial_change = 0.0_wp             !< namelist parameter
+    REAL(wp) ::  rayleigh_damping_factor = -1.0_wp             !< namelist parameter
+    REAL(wp) ::  rayleigh_damping_height = -1.0_wp             !< namelist parameter
+    REAL(wp) ::  recycling_width = 9999999.9_wp                !< namelist parameter
+    REAL(wp) ::  residual_limit = 1.0E-4_wp                    !< namelist parameter
+    REAL(wp) ::  restart_time = 9999999.9_wp                   !< namelist parameter
+    REAL(wp) ::  rho_reference                                 !< reference state of density
+    REAL(wp) ::  rho_surface                                   !< surface value of density
+    REAL(wp) ::  roughness_length = 0.1_wp                     !< namelist parameter
+    REAL(wp) ::  simulated_time = 0.0_wp                       !< elapsed simulated time
+    REAL(wp) ::  simulated_time_at_begin                       !< elapsed simulated time of previous run (job chain)
+    REAL(wp) ::  sin_alpha_surface                             !< sine of alpha_surface (sloped surface)
+    REAL(wp) ::  skip_time_data_output = 0.0_wp                !< namelist parameter
+    REAL(wp) ::  skip_time_data_output_av = 9999999.9_wp       !< namelist parameter
+    REAL(wp) ::  skip_time_dopr = 9999999.9_wp                 !< namelist parameter
+    REAL(wp) ::  skip_time_do2d_xy = 9999999.9_wp              !< namelist parameter
+    REAL(wp) ::  skip_time_do2d_xz = 9999999.9_wp              !< namelist parameter
+    REAL(wp) ::  skip_time_do2d_yz = 9999999.9_wp              !< namelist parameter
+    REAL(wp) ::  skip_time_do3d = 9999999.9_wp                 !< namelist parameter
+    REAL(wp) ::  spinup_pt_amplitude = 9999999.9_wp            !< namelist parameter
+    REAL(wp) ::  spinup_pt_mean = 9999999.9_wp                 !< namelist parameter
+    REAL(wp) ::  spinup_time = 0.0_wp                          !< namelist parameter
+    REAL(wp) ::  surface_heatflux = 9999999.9_wp               !< namelist parameter
+    REAL(wp) ::  surface_pressure = 1013.25_wp                 !< namelist parameter
+    REAL(wp) ::  surface_scalarflux = 9999999.9_wp             !< namelist parameter
+    REAL(wp) ::  surface_waterflux = 9999999.9_wp              !< namelist parameter
+    REAL(wp) ::  s_surface = 0.0_wp                            !< namelist parameter
+    REAL(wp) ::  s_surface_initial_change = 0.0_wp             !< namelist parameter
+    REAL(wp) ::  termination_time_needed = 35.0_wp             !< namelist parameter
+    REAL(wp) ::  time_coupling = 0.0_wp                        !< time since last coupling (surface_coupler)
+    REAL(wp) ::  time_disturb = 0.0_wp                         !< time since last flow disturbance
+    REAL(wp) ::  time_dopr = 0.0_wp                            !< time since last profile output
+    REAL(wp) ::  time_dopr_av = 0.0_wp                         !< time since last averaged profile output
+    REAL(wp) ::  time_dopr_listing = 0.0_wp                    !< time since last profile output (ASCII) on file
+    REAL(wp) ::  time_dopts = 0.0_wp                           !< time since last particle timeseries output
+    REAL(wp) ::  time_dosp = 0.0_wp                            !< time since last spectra output
+    REAL(wp) ::  time_dosp_av = 0.0_wp                         !< time since last averaged spectra output
+    REAL(wp) ::  time_dots = 0.0_wp                            !< time since last timeseries output
+    REAL(wp) ::  time_do2d_xy = 0.0_wp                         !< time since last xy cross-section output
+    REAL(wp) ::  time_do2d_xz = 0.0_wp                         !< time since last xz cross-section output
+    REAL(wp) ::  time_do2d_yz = 0.0_wp                         !< time since last yz cross-section output
+    REAL(wp) ::  time_do3d = 0.0_wp                            !< time since last 3d output
+    REAL(wp) ::  time_do_av = 0.0_wp                           !< time since last averaged-data output
+    REAL(wp) ::  time_do_sla = 0.0_wp                          !< time since last 
+    REAL(wp) ::  time_dvrp = 0.0_wp                            !< time since last dvrp output
+    REAL(wp) ::  time_restart = 9999999.9_wp                   !< time at which run shall be terminated and restarted
+    REAL(wp) ::  time_run_control = 0.0_wp                     !< time since last RUN_CONTROL output
+    REAL(wp) ::  time_since_reference_point = 0.0_wp           !< time after atmosphere-ocean coupling has been activated, or time after spinup phase of LSM has been finished
+    REAL(wp) ::  top_heatflux = 9999999.9_wp                   !< namelist parameter
+    REAL(wp) ::  top_momentumflux_u = 9999999.9_wp             !< namelist parameter
+    REAL(wp) ::  top_momentumflux_v = 9999999.9_wp             !< namelist parameter
+    REAL(wp) ::  top_salinityflux = 9999999.9_wp               !< namelist parameter
+    REAL(wp) ::  top_scalarflux = 9999999.9_wp                 !< namelist parameter
+    REAL(wp) ::  tunnel_height = 9999999.9_wp                  !< namelist parameter
+    REAL(wp) ::  tunnel_length = 9999999.9_wp                  !< namelist parameter
+    REAL(wp) ::  tunnel_width_x = 9999999.9_wp                 !< namelist parameter
+    REAL(wp) ::  tunnel_width_y = 9999999.9_wp                 !< namelist parameter
+    REAL(wp) ::  tunnel_wall_depth = 9999999.9_wp              !< namelist parameter
+    REAL(wp) ::  ug_surface = 0.0_wp                           !< namelist parameter 
+    REAL(wp) ::  u_bulk = 0.0_wp                               !< namelist parameter 
+    REAL(wp) ::  u_gtrans = 0.0_wp                             !< transformed wind component (galilei transformation)
+    REAL(wp) ::  vg_surface = 0.0_wp                           !< namelist parameter
+    REAL(wp) ::  vpt_reference = 9999999.9_wp                  !< reference state of virtual potential temperature
+    REAL(wp) ::  v_bulk = 0.0_wp                               !< namelist parameter
+    REAL(wp) ::  v_gtrans = 0.0_wp                             !< transformed wind component (galilei transformation)
+    REAL(wp) ::  wall_adjustment_factor = 1.8_wp               !< adjustment factor for mixing length l
+    REAL(wp) ::  zeta_max = 20.0_wp                            !< namelist parameter
+    REAL(wp) ::  zeta_min = -20.0_wp                           !< namelist parameter
+    REAL(wp) ::  z0h_factor = 1.0_wp                           !< namelist parameter
+
+    REAL(wp) ::  do2d_xy_last_time(0:1) = -1.0_wp                  !< time of previous xy output
+    REAL(wp) ::  do2d_xz_last_time(0:1) = -1.0_wp                  !< time of previous xz output
+    REAL(wp) ::  do2d_yz_last_time(0:1) = -1.0_wp                  !< time of previous yz output
+    REAL(wp) ::  dpdxy(1:2) = 0.0_wp                               !< namelist parameter
+    REAL(wp) ::  dt_domask(max_masks) = 9999999.9_wp               !< namelist parameter
+    REAL(wp) ::  dz(10) = -1.0_wp                                  !< namelist parameter
+    REAL(wp) ::  dz_stretch_level_start(9) = -9999999.9_wp         !< namelist parameter
+    REAL(wp) ::  dz_stretch_level_end(9) = 9999999.9_wp            !< namelist parameter
+    REAL(wp) ::  dz_stretch_factor_array(9) = 1.08_wp              !< namelist parameter
+    REAL(wp) ::  mask_scale(3)                                     !< collective array for mask_scale_x/y/z
+    REAL(wp) ::  pt_vertical_gradient(10) = 0.0_wp                 !< namelist parameter
+    REAL(wp) ::  pt_vertical_gradient_level(10) = -999999.9_wp   !< namelist parameter
+    REAL(wp) ::  q_vertical_gradient(10) = 0.0_wp                  !< namelist parameter
+    REAL(wp) ::  q_vertical_gradient_level(10) = -999999.9_wp    !< namelist parameter
+    REAL(wp) ::  s_vertical_gradient(10) = 0.0_wp                  !< namelist parameter
+    REAL(wp) ::  s_vertical_gradient_level(10) = -999999.9_wp    !< namelist parameter
+    REAL(wp) ::  skip_time_domask(max_masks) = 9999999.9_wp        !< namelist parameter
+    REAL(wp) ::  threshold(20) = 0.0_wp                            !< namelist parameter
+    REAL(wp) ::  time_domask(max_masks) = 0.0_wp                   !< namelist parameter
+    REAL(wp) ::  tsc(10) = (/ 1.0_wp, 1.0_wp, 0.0_wp, 0.0_wp, &    !< array used for controlling time-integration at different substeps
+                 0.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 0.0_wp /)
+    REAL(wp) ::  u_profile(200) = 9999999.9_wp                     !< namelist parameter
+    REAL(wp) ::  uv_heights(200) = 9999999.9_wp                    !< namelist parameter
+    REAL(wp) ::  v_profile(200) = 9999999.9_wp                     !< namelist parameter
+    REAL(wp) ::  ug_vertical_gradient(10) = 0.0_wp                 !< namelist parameter
+    REAL(wp) ::  ug_vertical_gradient_level(10) = -9999999.9_wp    !< namelist parameter
+    REAL(wp) ::  vg_vertical_gradient(10) = 0.0_wp                 !< namelist parameter
+    REAL(wp) ::  vg_vertical_gradient_level(10) = -9999999.9_wp    !< namelist parameter
+    REAL(wp) ::  volume_flow(1:3) = 0.0_wp                         !< volume flow through 1:yz-plane, 2: xz-plane, 3: xy-plane (nest childs only)
+    REAL(wp) ::  volume_flow_area(1:3) = 0.0_wp                    !< area of the respective volume flow planes
+    REAL(wp) ::  volume_flow_initial(1:3) = 0.0_wp                 !< initial volume flow (t=0) through the respective volume flow planes
+    REAL(wp) ::  wall_heatflux(0:5) = 0.0_wp                       !< namelist parameter
+    REAL(wp) ::  wall_humidityflux(0:5) = 0.0_wp                   !< namelist parameter
+    REAL(wp) ::  wall_salinityflux(0:5) = 0.0_wp                   !< namelist parameter
+    REAL(wp) ::  wall_scalarflux(0:5) = 0.0_wp                     !< namelist parameter 
+    REAL(wp) ::  subs_vertical_gradient(10) = 0.0_wp               !< namelist parameter 
+    REAL(wp) ::  subs_vertical_gradient_level(10) = -9999999.9_wp  !< namelist parameter
+
+    REAL(wp), DIMENSION(:), ALLOCATABLE ::  dp_smooth_factor  !< smoothing factor for external pressure gradient forcing
+
+    REAL(wp), DIMENSION(max_masks,mask_xyz_dimension) ::  mask_x = -1.0_wp  !< namelist parameter
+    REAL(wp), DIMENSION(max_masks,mask_xyz_dimension) ::  mask_y = -1.0_wp  !< namelist parameter
+    REAL(wp), DIMENSION(max_masks,mask_xyz_dimension) ::  mask_z = -1.0_wp  !< namelist parameter
+    
+    REAL(wp), DIMENSION(max_masks,3) ::  mask_x_loop = -1.0_wp  !< namelist parameter
+    REAL(wp), DIMENSION(max_masks,3) ::  mask_y_loop = -1.0_wp  !< namelist parameter
+    REAL(wp), DIMENSION(max_masks,3) ::  mask_z_loop = -1.0_wp  !< namelist parameter
+    
+!
+!--    internal mask arrays ("mask,dimension,selection")
+       REAL(wp), DIMENSION(:,:,:), ALLOCATABLE ::  mask       !< collective array for mask_x/y/z
+       REAL(wp), DIMENSION(:,:,:), ALLOCATABLE ::  mask_loop  !< collective array for mask_x/y/z_loop
+
+    SAVE
+
+ END MODULE control_parameters
