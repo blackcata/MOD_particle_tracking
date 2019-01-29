@@ -3,7 +3,7 @@ FCFLAGS=-O3
 LDFLAGS=
 
 TARGET= PAR_TRACK.exe
-OBJECT= mod_kinds.o mod_particle_tracking.o main.o
+OBJECT= modules.o mod_kinds.o mod_particle_tracking.o main.o
 
 all : $(TARGET)
 $(TARGET) : $(OBJECT)
@@ -18,3 +18,11 @@ clean :
 	rm -f *.mod
 	rm -f *.o
 	rm PAR_TRACK.exe
+
+modules.o: \
+	mod_kinds.o
+mod_kinds.o: \
+
+mod_particle_tracking.o: \
+	mod_kinds.o \
+	modules.o 

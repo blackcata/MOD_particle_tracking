@@ -12,6 +12,7 @@
         MODULE particle_tracking
 
           USE kinds
+          USE pegrid
           IMPLICIT NONE
 
           INTEGER(iwp) ::  unit_par, num_par
@@ -19,6 +20,7 @@
           SAVE
 
         CONTAINS
+          ! Reading the total number of the particles which want to track
           FUNCTION READ_PAR_NUM(path,filename)
             INTEGER(iwp) ::  READ_PAR_NUM, unit_par, io
             REAL(wp)     ::  tmp
