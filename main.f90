@@ -16,9 +16,10 @@
           IMPLICIT NONE
           CHARACTER(LEN=100) :: path, filename
 
-          path      = '/home/km109/PALM_60/JOBS/NP_test/OUTPUT/PARTICLE_DATA/'
+          path= '/home/km109/PALM_60/JOBS/NP_test/OUTPUT/PARTICLE_DATA/'
           filename  = 'particle_list.dat' 
           
-          PRINT*,READ_PAR_NUM(path,filename)          
+          num_par = READ_PAR_NUM(path,filename)          
+          CALL MAKE_PAR_FILES(path,filename)
 
         END PROGRAM main
