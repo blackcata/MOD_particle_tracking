@@ -32,3 +32,4 @@ Following the below process will make each particle's trajectories at the specif
          
 6. Run the PALM model with specific cases.
     
+If you want more details,look at the EXAMPLE folder and compare what is different. 
