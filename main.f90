@@ -22,7 +22,7 @@
           path_par     = path
           filename_par = filename
 
-          num_par = READ_PAR_NUM(path,filename)          
+          num_par = READ_PAR_NUM(path_par,filename_par)
           CALL MAKE_PAR_FILES
 
         END PROGRAM main

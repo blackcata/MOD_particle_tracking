@@ -93,12 +93,12 @@
 !                                                                              !
 !------------------------------------------------------------------------------!
 
-          SUBROUTINE PAR_TRAJ_WRITE(kp,jp,ip)
+          SUBROUTINE PAR_TRAJ_WRITE(ip,jp,kp)
              IMPLICIT NONE
  
              INTEGER(iwp) :: ip  !< index of particle grid box, x-direction
-             INTEGER(iwp) :: jp  !< index of particle grid box, x-direction
-             INTEGER(iwp) :: kp  !< index of particle grid box, x-direction
+             INTEGER(iwp) :: jp  !< index of particle grid box, y-direction
+             INTEGER(iwp) :: kp  !< index of particle grid box, z-direction
              INTEGER(iwp) ::  n  !< particle index
              INTEGER(iwp) ::  nb !< index of sub-box particles are sorted in
              INTEGER(iwp) ::  pn !< the number of particles want to track
