@@ -13,10 +13,13 @@
 
           USE kinds
           USE pegrid
+          USE particle_attributes
+
           IMPLICIT NONE
 
           INTEGER(iwp) ::  unit_par, num_par
           INTEGER(wp),DIMENSION(:),ALLOCATABLE :: par_id
+          CHARACTER(LEN=100) :: path_par,filename_par
 
           SAVE
 
@@ -47,23 +50,21 @@
 !                                                                              !
 !   SUBROUTINE : MAKE_PAR_FILES                                                !
 !                                                                              !
-!   PURPOSE : To make each tracking paricles dat files                         !
+!   PURPOSE : To make each tracking particles dat files                        !
 !                                                             2019.01.29 K.Noh !
 !                                                                              !
 !------------------------------------------------------------------------------!
 
-          SUBROUTINE MAKE_PAR_FILES(path,filename)
+          SUBROUTINE MAKE_PAR_FILES
             IMPLICIT NONE
             INTEGER(iwp)       :: unit_list, pn
             CHARACTER(LEN=100) :: int_char
-            CHARACTER(LEN=100),INTENT(IN) :: path,filename
-
 
             ALLOCATE( par_id(1:num_par)  )
             unit_list = 200
 
             ! Read each particle's id
-            OPEN(unit_list,FILE=TRIM(path)//TRIM(filename),STATUS='OLD')
+            OPEN(unit_list,FILE=TRIM(path_par)//TRIM(filename_par),STATUS='OLD')
             DO pn = 1,num_par
                READ(unit_list,*) par_id(pn) 
             END DO 
@@ -73,10 +74,23 @@
             DO pn = 1,num_par
                 unit_par = 300+myid+pn
                 WRITE(int_char,'(I4.4)') pn
-                OPEN(unit_par,FILE=TRIM(path)//'prt_traj_'//TRIM(int_char)      &
+                OPEN(unit_par,FILE=TRIM(path_par)//'prt_traj_'//TRIM(int_char)  &
                                              //'.dat',STATUS='REPLACE')
             END DO 
             
           END SUBROUTINE MAKE_PAR_FILES
 
+!------------------------------------------------------------------------------!
+!                                                                              !
+!   SUBROUTINE : PAR_TRAJ_WRITE                                                !
+!                                                                              !
+!   PURPOSE : To write each tracking particles dat files                       !
+!                                                             2019.01.29 K.Noh !
+!                                                                              !
+!------------------------------------------------------------------------------!
+
+          SUBROUTINE PAR_TRAJ_WRITE
+            IMPLICIT NONE
+            
+          END SUBROUTINE PAR_TRAJ_WRITE
         END MODULE
