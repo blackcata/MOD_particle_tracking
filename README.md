@@ -13,12 +13,12 @@ Following the below process will make each particle's trajectories at the specif
 2. Set the two path('path_par') and filename('filenmae_par') at the user_init.f90 file. 
 3. Add two lines on the end of user_init.f90 
 
-    num_par = READ_PAR_NUM(path_par,filename_par)
-    CALL MAKE_PAR_FILES
+   - num_par = READ_PAR_NUM(path_par,filename_par)
+   - CALL MAKE_PAR_FILES
 
 4. Add one line on the end of user_init.f90 
 
-    CALL PAR_TRAJ_WRITE(ip,jp,kp)
+   - CALL PAR_TRAJ_WRITE(ip,jp,kp)
     
 5. Modifiy the Makefile 
   - Add mod_particle_tracking.f90 at the SOURCE
