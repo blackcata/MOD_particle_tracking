@@ -77,8 +77,6 @@
 
     IMPLICIT NONE
 
-    INTEGER(iwp)          :: i, j, k
-
     !<KM_FLAG
     path_par  = '/home/km109/PALM_60/JOBS/NP_test/OUTPUT/PARTICLE_DATA/'    
     filename_par = 'particle_list.dat'
