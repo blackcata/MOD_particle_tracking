@@ -79,7 +79,8 @@
                 unit_par = 300+myid+pn
                 WRITE(int_char,'(I4.4)') pn
                 OPEN(unit_par,FILE=TRIM(path_par)//'prt_traj_'//TRIM(int_char)  &
-                                             //'.dat',STATUS='REPLACE')
+                                       //'.dat',STATUS='REPLACE')
+                CLOSE(unit_par)
             END DO 
             
           END SUBROUTINE MAKE_PAR_FILES
@@ -106,6 +107,8 @@
              INTEGER(iwp), DIMENSION(0:7)  ::  start_index !< start particle index for current sub-box
              INTEGER(iwp), DIMENSION(0:7)  ::  end_index   !< start particle index for current sub-box
 
+             CHARACTER(LEN=100) :: int_char
+
              number_of_particles = prt_count(kp,jp,ip)
              particles => grid_particles(kp,jp,ip)%particles(1:number_of_particles)
 
@@ -117,11 +120,17 @@
                   DO pn = 1,num_par
                       unit_par = 300+myid+pn
                       IF ( particles(n)%id == par_id(pn) ) THEN 
-                          WRITE(unit_par,"(F15.7,2X,4(E15.7,2X))") simulated_time,       &
-                                                                   particles(n)%x,       &
-                                                                   particles(n)%y,       &
-                                                                   particles(n)%z,       &
-                                                                   particles(n)%radius
+                          WRITE(int_char,'(I4.4)') pn
+                          OPEN(unit_par,FILE=TRIM(path_par)//'prt_traj_'//      &
+                                             TRIM(int_char)//'.dat',            &
+                                        ACTION='WRITE',POSITION='APPEND')
+                          WRITE(unit_par,"(F15.7,2X,4(E15.7,2X))")              &
+                                                          simulated_time,       &
+                                                          particles(n)%x,       &
+                                                          particles(n)%y,       &
+                                                          particles(n)%z,       &
+                                                          particles(n)%radius
+                          CLOSE(unit_par)
                       END IF
 
                   ENDDO 
